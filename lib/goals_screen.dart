@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:dhiwise_task/ProgressBar/circular_slider.dart';
 import 'package:dhiwise_task/circular_progress_bar.dart';
 import 'package:dhiwise_task/size_config.dart';
-import 'package:flutter/material.dart';
 
 class GoalScreen extends StatefulWidget {
   @override
@@ -17,6 +18,7 @@ class _GoalScreenState extends State<GoalScreen> {
     goals = FirebaseFirestore.instance.collection('goals');
   }
 
+  bool flag = true;
   int sliderIndex = 0;
 
   @override
@@ -27,29 +29,29 @@ class _GoalScreenState extends State<GoalScreen> {
       body: StreamBuilder(
         stream: goals.snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
+          if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('Goals not found'));
-          } else {
-            // Extract goal data from the snapshot
-            // For simplicity, let's assume there's only one document in the collection
-            List<QueryDocumentSnapshot<Object?>> goalData = snapshot.data!.docs;
-
-            // Implement UI based on goal data
-            return buildGoalDetails(goalData);
           }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('Goals not found'));
+          }
+
+          List<QueryDocumentSnapshot<Object?>> goalData = snapshot.data!.docs;
+          return SingleChildScrollView(child: buildGoalDetails(goalData));
         },
       ),
     );
   }
 
   Widget buildGoalDetails(List<QueryDocumentSnapshot<Object?>> goalData) {
+    dynamic remainingSavings = goalData[sliderIndex]['totalAmount'] -
+        goalData[sliderIndex]['currentAmount'];
+
+    dynamic monthlySavingProjection =
+        remainingSavings / Constants.monthsForProjection;
+
     return Container(
-      width: SizeConfig.screenWidth,
-      height: SizeConfig.screenHeight,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(40.0),
@@ -57,56 +59,202 @@ class _GoalScreenState extends State<GoalScreen> {
         ),
         color: Color.fromARGB(255, 21, 2, 53),
       ),
-      child: Padding(
-        // padding:
-        //     const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-        padding: EdgeInsets.all(0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              goalData[sliderIndex]['title'],
-              style: const TextStyle(
-                fontSize: 35,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 25, left: 25, top: 25),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Text(
+                  goalData[sliderIndex]['title'],
+                  style: const TextStyle(
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                CircularProgressBar(
+                  currentIndex: sliderIndex,
+                  updateSliderCount: (index) {
+                    setState(() {
+                      sliderIndex = index;
+                    });
+                  },
+                  currentAmount: goalData[sliderIndex]['currentAmount'],
+                  totalAmount: goalData[sliderIndex]['totalAmount'],
+                  sliderLength: goalData.length,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 15, right: 15),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Goal',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 18)),
+                          Text('by ${goalData[sliderIndex]['goalDate']}',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 13)),
+                        ],
+                      ),
+                      Text('\$ ${goalData[sliderIndex]['totalAmount']}',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 18)),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Container(
+                  height: 70,
+                  decoration: const BoxDecoration(
+                      color: Color.fromARGB(255, 7, 87, 153),
+                      borderRadius: BorderRadius.all(Radius.circular(10))),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 13, bottom: 5),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Need more savings',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 13)),
+                            Text('\$ $remainingSavings',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, bottom: 13),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Monthly Saving Projection',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 13)),
+                            Text('\$ $monthlySavingProjection',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 25,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 300,
+            decoration: const BoxDecoration(
+                color: Color.fromARGB(255, 207, 218, 238),
+                borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(40),
+                    topLeft: Radius.circular(40))),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            flag = true;
+                          });
+                        },
+                        child: Text(
+                          'Contributions',
+                          style: TextStyle(
+                              color: flag ? Colors.black : Colors.grey,
+                              fontWeight:
+                                  flag ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 15),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            flag = false;
+                          });
+                        },
+                        child: Text(
+                          'Show History',
+                          style: TextStyle(
+                              color: flag ? Colors.grey : Colors.black,
+                              fontWeight:
+                                  flag ? FontWeight.normal : FontWeight.bold,
+                              fontSize: 15),
+                        ),
+                      ),
+                    ],
+                  ),
+                  flag
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: Column(
+                            children: [
+                              const MultiCircularSlider(
+                                size: 10,
+                                values: [0.6, 0.3, 0.1],
+                                colors: [
+                                  Colors.blue,
+                                  Colors.yellow,
+                                  Colors.greenAccent,
+                                ],
+                                showTotalPercentage: true,
+                                animationDuration: Duration(milliseconds: 1500),
+                                animationCurve: Curves.easeIn,
+                                innerWidget: Column(
+                                  children: [],
+                                ),
+                                trackColor: Colors.grey,
+                                progressBarWidth: 30.0,
+                                trackWidth: 10,
+                                labelTextStyle: TextStyle(),
+                                percentageTextStyle: TextStyle(),
+                                progressBarType: MultiCircularSliderType.linear,
+                              ),
+                              HistoryList(
+                                  contributions: goalData[sliderIndex]
+                                      ['contributions']),
+                            ],
+                          ),
+                        )
+                      : HistoryList(
+                          contributions: goalData[sliderIndex]
+                              ['contributions']),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            CircularProgressBar(
-                updateSliderCount: (index) {
-                  print(index);
-                  setState(() {
-                    sliderIndex = index;
-                  });
-                },
-                currentAmount:
-                    goalData[sliderIndex]['currentAmount'].toDouble(),
-                totalAmount: goalData[sliderIndex]['totalAmount'].toDouble(),
-                sliderCount: goalData.length),
-            const SizedBox(height: 26),
-            Text('Total Amount: \$${goalData[sliderIndex]['totalAmount']}'),
-            Text('Current Amount: \$${goalData[sliderIndex]['currentAmount']}'),
-            Text('Target Date: ${goalData[sliderIndex]['targetDate']}'),
-            SizedBox(height: 24),
-            Text(
-              'Contribution History:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            ContributionHistoryList(
-                contributions: goalData[sliderIndex]['contributions']),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class ContributionHistoryList extends StatelessWidget {
+class Constants {
+  static const int monthsForProjection = 60;
+}
+
+class HistoryList extends StatelessWidget {
   final List<dynamic> contributions;
 
-  ContributionHistoryList({required this.contributions});
+  const HistoryList({Key? key, required this.contributions}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -117,15 +265,30 @@ class ContributionHistoryList extends StatelessWidget {
         Map<String, dynamic> contribution = contributions[index];
         String date = contribution['date'];
         dynamic amount = contribution['amount'];
-
-        // Check if 'amount' is a String and convert it to double if needed
         double? amountDouble =
             amount is String ? double.tryParse(amount) : amount?.toDouble();
 
         return ListTile(
-          title: Text('Date: $date'),
-          subtitle: Text(
-              'Amount: ${amountDouble != null ? '\$$amountDouble' : 'N/A'}'),
+          title: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Date : $date',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  Text(
+                    'Amount : ${amountDouble != null ? '\$$amountDouble' : 'N/A'}',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+            ],
+          ),
         );
       },
     );
