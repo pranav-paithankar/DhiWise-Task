@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "895698934336",
+    "firebase_url": "https://dhiwise-task-f2495-default-rtdb.firebaseio.com",
+    "project_id": "dhiwise-task-f2495",
+    "storage_bucket": "dhiwise-task-f2495.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895698934336:android:d641cb7581ea1c4a50dda5",
+        "android_client_info": {
+          "package_name": "com.example.dhiwise_task"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL2rZcCbGXcJM9HWTapY2n04SX3JuCH40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
